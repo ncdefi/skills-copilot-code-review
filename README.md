@@ -23,6 +23,13 @@ In this exercise, you will:
 1. Customize Copilot's review considerations with repository-specific instructions
 1. Configure automatic code reviews using repository rulesets
 
+## Collaborative review reference
+
+If you are adapting this repo for real team workflows, use the shared process and PR checklist:
+
+- [Collaborative Code Review Process](.github/code-review-process.md)
+- [Pull Request Template](.github/pull_request_template.md)
+
 ### How to start this exercise
 
 Simply copy the exercise to your account, then give your favorite Octocat (Mona) **about 20 seconds** to prepare the first lesson, then **refresh the page**.

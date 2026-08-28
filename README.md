@@ -21,6 +21,7 @@ If you are adapting this repo for real team workflows, use the shared process an
 
 - [Collaborative Code Review Process](.github/code-review-process.md)
 - [Pull Request Template](.github/pull_request_template.md)
+- [CI Workflow](.github/workflows/ci.yml) for lint, security scanning, and conditional coverage checks
 
 ### How to start this exercise
 

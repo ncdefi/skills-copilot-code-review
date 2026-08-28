@@ -19,6 +19,8 @@ concurrency:
 jobs:
   quality-security-and-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
@@ -36,11 +38,28 @@ jobs:
           pip install -r requirements.txt
           pip install ruff bandit
 
-      - name: Lint
-        run: ruff check src
+      - name: Detect changed Python files
+        id: changed_python
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **/*.py
 
-      - name: Security scan
-        run: bandit -r src
+      - name: Lint changed Python files
+        if: steps.changed_python.outputs.any_changed == 'true'
+        run: ruff check ${{ steps.changed_python.outputs.all_changed_files }}
+
+      - name: Skip lint when no Python files changed
+        if: steps.changed_python.outputs.any_changed != 'true'
+        run: echo "No Python file changes detected; lint skipped."
+
+      - name: Security scan on changed Python files
+        if: steps.changed_python.outputs.any_changed == 'true'
+        run: bandit ${{ steps.changed_python.outputs.all_changed_files }}
+
+      - name: Skip security scan when no Python files changed
+        if: steps.changed_python.outputs.any_changed != 'true'
+        run: echo "No Python file changes detected; security scan skipped."
 
       - name: Detect tests
         id: detect_tests

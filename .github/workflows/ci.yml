@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-security-and-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install runtime and quality dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff bandit
+
+      - name: Detect changed Python files
+        id: changed_python
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **/*.py
+
+      - name: Lint changed Python files
+        if: steps.changed_python.outputs.any_changed == 'true'
+        run: ruff check ${{ steps.changed_python.outputs.all_changed_files }}
+
+      - name: Skip lint when no Python files changed
+        if: steps.changed_python.outputs.any_changed != 'true'
+        run: echo "No Python file changes detected; lint skipped."
+
+      - name: Security scan on changed Python files
+        if: steps.changed_python.outputs.any_changed == 'true'
+        run: bandit ${{ steps.changed_python.outputs.all_changed_files }}
+
+      - name: Skip security scan when no Python files changed
+        if: steps.changed_python.outputs.any_changed != 'true'
+        run: echo "No Python file changes detected; security scan skipped."
+
+      - name: Detect tests
+        id: detect_tests
+        run: |
+          if find . -type f \( -name "test_*.py" -o -name "*_test.py" \) | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install test dependencies
+        if: steps.detect_tests.outputs.found == 'true'
+        run: pip install pytest pytest-cov
+
+      - name: Test with coverage gate
+        if: steps.detect_tests.outputs.found == 'true'
+        run: pytest --cov=src --cov-report=term-missing --cov-fail-under=80
+
+      - name: Skip test gate when no tests exist
+        if: steps.detect_tests.outputs.found != 'true'
+        run: echo "No test files found; coverage gate skipped."
